@@ -64,13 +64,7 @@ sns.set_palette("Blues_d")
 # INISIALISASI STATE UNTUK TOGGLE SIDEBAR
 # ==========================================
 if 'sidebar_state' not in st.session_state:
-    st.session_state.sidebar_state = 'expanded'
-
-st.set_page_config(
-    page_title="Dashboard Analisis Pelabuhan", 
-    layout="wide", 
-    initial_sidebar_state=st.session_state.sidebar_state
-)
+    st.session_state.sidebar_state = 'collapsed'
 
 responsive_css = """
 <style>
