@@ -19,6 +19,43 @@ from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory, StopWordRemover, ArrayDictionary
 from config import DATA_PROCESSED
 from aspect.summary import AspectSummarizer
+#=================================================================================== Untuk baca html(salah konfig streamlit)
+import threading
+import streamlit as st
+import streamlit.components.v1 as components
+import os
+
+# Set konfigurasi halaman penuh
+st.set_page_config(
+    page_title="Dashboard Analisis Sentimen Pelabuhan",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# Sembunyikan header/footer bawaan Streamlit
+st.markdown("""
+    <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        .block-container {padding: 0rem !important; max-width: 100% !important;}
+        iframe {border: none !important; width: 100% !important;}
+    </style>
+""", unsafe_allow_html=True)
+
+#Jalankan server Flask (api_server.py) di background thread
+def start_flask():
+    from api_server import app as flask_app
+    flask_app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+
+if 'flask_started' not in st.session_state:
+    st.session_state.flask_started = True
+    thread = threading.Thread(target=start_flask, daemon=True)
+    thread.start()
+
+#Tampilkan antarmuka HTML dari Flask
+components.iframe("http://localhost:5000", height=1200, scrolling=True)
+#===================================================================================
 
 sns.set_theme(style="whitegrid")
 sns.set_palette("Blues_d")
