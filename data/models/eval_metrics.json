@@ -1,0 +1,1 @@
+{"accuracy": 0.7381370826010545, "precision": 0.709362354180504, "recall": 0.7381370826010545, "f1_score": 0.7196055999484977, "confusion_matrix": [[26, 7, 40], [8, 16, 48], [16, 30, 378]], "labels": ["NEGATIF", "NETRAL", "POSITIF"]}
