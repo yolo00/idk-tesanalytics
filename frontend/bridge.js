@@ -1,8 +1,5 @@
 /**
  * bridge.js — lapisan komunikasi antara dashboard dan backend.
- * - Dibuka lewat Flask (python api_server.py): apiFetch = fetch biasa ke /api.
- * - Dibuka di dalam Streamlit (component): request dikirim ke Python lewat
- *   protokol komponen Streamlit, lalu dijawab oleh app.py. Tanpa localhost/port lain.
  */
 (function () {
     const inStreamlit = location.search.includes('streamlitUrl');
@@ -34,7 +31,18 @@
     });
 
     send({ type: 'streamlit:componentReady', apiVersion: 1 });
-    let hgt = 900;
-    try { hgt = Math.max(700, window.parent.innerHeight - 16); } catch (e) { /* cross-origin */ }
-    send({ type: 'streamlit:setFrameHeight', height: hgt });
+
+    // Streamlit memasang scrolling="no" pada iframe komponen, sehingga isi yang lebih
+    // tinggi dari frame terpotong. Aktifkan scroll di dalam frame (iframe same-origin)
+    // dan tinggikan frame setinggi layar, supaya sidebar sticky & modal tetap benar.
+    function fit() {
+        try {
+            const fe = window.frameElement;
+            if (fe) fe.setAttribute('scrolling', 'yes');
+            const h = Math.max(600, window.parent.innerHeight - 8);
+            send({ type: 'streamlit:setFrameHeight', height: h });
+        } catch (e) { send({ type: 'streamlit:setFrameHeight', height: 900 }); }
+    }
+    fit();
+    window.addEventListener('resize', fit);
 })();
