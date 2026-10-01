@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dashboard Analisis Sentimen Pelabuhan - Pemantauan ulasan pelanggan berbasis kecerdasan buatan oleh Tim Analitik Polibatam">
+    <title>Dashboard Analisis Pelabuhan</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Plotly.js for interactive charts -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <!-- WordCloud2 for word clouds -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.1.2/wordcloud2.min.js"></script>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Memuat Data Dashboard...</div>
+</div>
+
+<!-- Modal for Enlarged Charts -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal-content" id="modalContent">
+        <button class="modal-close" onclick="closeModalDirect()">✕</button>
+        <div id="modalChartContainer" style="width:100%; min-height:500px;"></div>
+    </div>
+</div>
+
+<div class="app-wrapper">
+    <!-- ========== SIDEBAR ========== -->
+    <aside class="sidebar" id="sidebar">
+        <img src="https://www.polibatam.ac.id/wp-content/uploads/2024/01/cropped-cropped-cropped-02_Logo_1_Utama_Polibatam_Horizontal@2x.png" 
+             alt="Logo Polibatam" class="sidebar-logo" id="sidebarLogo">
+        
+        <h2>Pusat Data Pelabuhan</h2>
+
+        <button class="btn btn-refresh" onclick="refreshData()">🔄 Segarkan Data Sekarang</button>
+
+        <hr>
+
+        <div class="sidebar-section">
+            <label>Pilih Pelabuhan:</label>
+            <div class="port-checks" id="portChecks">
+                <!-- filled -->
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <label>Pilih Rentang Tanggal</label>
+            <div class="date-row">
+                <div class="form-group">
+                    <label>📅 Mulai</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="form-group">
+                    <label>📅 Akhir</label>
+                    <input type="date" id="endDate">
+                </div>
+            </div>
+            <div id="dateError" class="alert alert-error" style="display:none; margin-top:0.5rem;">
+                ⚠️ Tgl Mulai tidak boleh melewati Tgl Akhir!
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="sidebar-footer">
+            Dikembangkan oleh Tim Analitik Polibatam
+        </div>
+    </aside>
+
+    <!-- ========== MAIN CONTENT ====== -->
+    <main class="main-content" id="mainContent">
+        <!-- Hero Header -->
+        <div class="hero-header">
+            <div class="hero-banner">
+                <p class="hero-title">Dashboard Analisis Sentimen Pelabuhan</p>
+                <p class="hero-subtitle">Powered by Tim Analitik Polibatam — Pemantauan Ulasan Pelanggan Berbasis Kecerdasan Buatan</p>
+            </div>
+            <button class="toggle-sidebar-btn" id="toggleSidebarBtn" onclick="toggleSidebar()">
+                ⏪ Sembunyikan Sidebar
+            </button>
+        </div>
+
+        <hr>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid" id="kpiGrid">
+            <div class="kpi-card">
+                <div class="kpi-icon">📊</div>
+                <div>
+                    <div class="kpi-label">Total Volume Ulasan</div>
+                    <div class="kpi-value" id="kpiTotal">—</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">⭐</div>
+                <div>
+                    <div class="kpi-label">Rata-rata Rating (Bintang)</div>
+                    <div class="kpi-value" id="kpiRating">—</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">🚢</div>
+                <div>
+                    <div class="kpi-label">Pelabuhan Teranalisis</div>
+                    <div class="kpi-value" id="kpiPorts">—</div>
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- Empty State Alert -->
+        <div id="emptyAlert" class="alert alert-warning" style="display:none;">
+            ⚠️ Tidak ada data pelabuhan yang dipilih atau sesuai rentang waktu. Sesuaikan filter di sidebar.
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs-container" id="tabsContainer">
+            <div class="tab-list">
+                <button class="tab-btn active" data-tab="tab1" onclick="switchTab('tab1', this)">📊 Visualisasi Data</button>
+                <button class="tab-btn" data-tab="tab2" onclick="switchTab('tab2', this)">☁️ WordCloud & Heatmap</button>
+                <button class="tab-btn" data-tab="tab3" onclick="switchTab('tab3', this)">🤖 Prediksi Sentimen (SVM)</button>
+                <button class="tab-btn" data-tab="tab4" onclick="switchTab('tab4', this)">📈 Evaluasi Model</button>
+            </div>
+
+            <!-- ===== TAB 1: Visualisasi Data ===== -->
+            <div class="tab-panel active" id="tab1">
+                <div class="chart-grid">
+                    <div class="chart-card">
+                        <h4>📊 Distribusi Popularitas</h4>
+                        <div class="chart-wrapper" id="chartPopularity"></div>
+                        <button class="btn" onclick="enlargeChart('chartPopularity')">🔍 Perbesar Diagram Popularitas</button>
+                    </div>
+                    <div class="chart-card">
+                        <h4>⭐ Kualitas (Rating) vs Volume</h4>
+                        <div class="chart-wrapper" id="chartScatter"></div>
+                        <button class="btn" onclick="enlargeChart('chartScatter')">🔍 Perbesar Diagram Kualitas</button>
+                    </div>
+                </div>
+
+                <div class="chart-card chart-card-full" style="margin-bottom:1.2rem;">
+                    <h4>📈 Tren Volume Ulasan per Bulan</h4>
+                    <div class="chart-wrapper" id="chartTrend"></div>
+                    <button class="btn" onclick="enlargeChart('chartTrend')">🔍 Perbesar Tren Volume Ulasan</button>
+                </div>
+
+                <hr>
+
+                <div class="chart-card chart-card-full" style="margin-bottom:1.2rem;">
+                    <h4>📋 Analisis Aspek Keluhan & Pujian</h4>
+                    <div class="chart-wrapper" id="chartAspect" style="min-height:500px;"></div>
+                    <button class="btn" onclick="enlargeChart('chartAspect')">🔍 Perbesar Grafik Aspek Keluhan</button>
+                </div>
+
+                <hr>
+
+                <div class="chart-card chart-card-full" style="margin-bottom:1.2rem;">
+                    <h4>📈 Tren Aspek dari Waktu ke Waktu (Analisis Prediktif)</h4>
+                    <p style="font-size:0.85rem; color:var(--muted); margin-bottom:1rem;">
+                        Pantau kapan suatu aspek sering dibicarakan untuk memprediksi potensi masalah di masa depan berdasarkan tren bulan-bulan sebelumnya.
+                    </p>
+                    
+                    <div class="aspect-filter-row">
+                        <div class="form-group">
+                            <label>🔍 Filter Aspek (Bisa pilih lebih dari satu):</label>
+                            <div class="aspect-checks" id="aspectChecks">
+                                <!-- Dynamically filled -->
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>🎯 Fokus Analisis:</label>
+                            <div class="radio-group">
+                                <label class="radio-item">
+                                    <input type="radio" name="sentimentFocus" value="all" checked onchange="renderAspectTrend()"> Semua Ulasan
+                                </label>
+                                <label class="radio-item">
+                                    <input type="radio" name="sentimentFocus" value="negative" onchange="renderAspectTrend()"> Khusus Keluhan (Negatif)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-wrapper" id="chartAspectTrend" style="min-height:400px;"></div>
+                    <button class="btn" onclick="enlargeChart('chartAspectTrend')">🔍 Perbesar Grafik Tren Prediktif</button>
+                </div>
+            </div>
+
+            <!-- ===== TAB 2: WordCloud & Heatmap ===== -->
+            <div class="tab-panel" id="tab2">
+                <div class="chart-grid">
+                    <div class="chart-card">
+                        <h4>☁️ Visualisasi WordCloud</h4>
+                        <div class="wordcloud-container">
+                            <canvas id="wordcloudCanvas" width="700" height="450"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h4>🔥 Heatmap Keluhan Konsumen</h4>
+                        <div class="chart-wrapper" id="chartHeatmap"></div>
+                        <button class="btn" onclick="enlargeChart('chartHeatmap')">🔍 Perbesar Heatmap</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TAB 3: Prediksi Sentimen ===== -->
+            <div class="tab-panel" id="tab3">
+                <div class="predict-container">
+                    <h2 style="margin-bottom:0.5rem;">Sistem Uji Sentimen Real-Time</h2>
+                    <p style="color:var(--muted); margin-bottom:1.2rem; font-size:0.9rem;">
+                        Ketik ulasan di bawah ini untuk melihat bagaimana <strong>Support Vector Machine (SVM) dan TF-IDF</strong> memprediksi sentimen teks secara instan berdasarkan data latih.
+                    </p>
+
+                    <div class="form-group" style="margin-bottom:1rem;">
+                        <label>Ketik ulasan terkait layanan pelabuhan (maks. 500 kata):</label>
+                        <textarea id="predictInput" placeholder="Contoh: Pelayanan di pelabuhan sangat baik dan ramah..."></textarea>
+                    </div>
+
+                    <button class="btn btn-primary" id="predictBtn" onclick="predictSentiment()">
+                        Analisis Ulasan (SVM)
+                    </button>
+
+                    <div id="predictResult" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- ===== TAB 4: Evaluasi Model ===== -->
+            <div class="tab-panel" id="tab4">
+                <h2 style="margin-bottom:0.5rem;">Evaluasi Kinerja Model SVM</h2>
+                <p style="color:var(--muted); margin-bottom:1.2rem; font-size:0.9rem;">
+                    Bagian ini menampilkan metrik performa model Support Vector Machine.
+                </p>
+
+                <div class="metrics-grid" id="metricsGrid">
+                    <!-- Dynamically filled -->
+                </div>
+
+                <hr>
+
+                <div class="chart-card chart-card-full">
+                    <h4>Confusion Matrix</h4>
+                    <div class="alert alert-info" style="margin-bottom:1rem;">
+                        Visualisasi ini menunjukan kemampuan model dalam membedakan setiap kelas (Positif, Netral, Negatif). Sumbu Y adalah kelas asli (Actual), dan Sumbu X adalah tebakan model (Predicted).
+                    </div>
+                    <div class="chart-wrapper" id="chartConfusionMatrix"></div>
+                    <button class="btn" onclick="enlargeChart('chartConfusionMatrix')">🔍 Perbesar Confusion Matrix</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== INSIGHTS SECTION ===== -->
+        <hr>
+        <div class="insights-section" id="insightsSection">
+            <h3 style="margin-bottom:1rem;">💡 Ringkasan Fakta & Analisis Data Terfilter</h3>
+            <div class="insights-grid">
+                <div class="insight-card" id="insightFindings">
+                    <h5>📌 Temuan Aspek & Distribusi Keluhan</h5>
+                    <ul id="insightList">
+                        <li>Memuat data...</li>
+                    </ul>
+                </div>
+                <div class="insight-card" style="border-left-color: var(--negative);">
+                    <h5>💬 Contoh Ulasan Negatif Terbaru</h5>
+                    <div id="insightNegSamples">
+                        <p style="color:var(--muted); font-size:0.85rem;">Memuat data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== RAW TABLE ===== -->
+        <hr>
+        <div class="expander" id="tableExpander">
+            <div class="expander-header" onclick="toggleExpander(this)">
+                <span class="arrow">▶</span> Lihat Data Ulasan Mentah (Tabel)
+            </div>
+            <div class="expander-body">
+                <div class="data-table-wrapper">
+                    <table class="data-table" id="rawTable">
+                        <thead>
+                            <tr>
+                                <th>Pelabuhan</th>
+                                <th>Tanggal</th>
+                                <th>Ulasan</th>
+                                <th>Rating</th>
+                                <th>Aspek</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rawTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="bridge.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

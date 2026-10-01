@@ -26,6 +26,7 @@ CORS(app)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PROCESSED = os.path.join(BASE_DIR, 'data', 'processed')
 MODELS_DIR = os.path.join(BASE_DIR, 'data', 'models')
+FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
 
 # ==========================================
 # PREPROCESSING TOOLS (LAZY LOAD)
@@ -423,15 +424,19 @@ def reload_data():
 # Serve the HTML frontend
 @app.route('/')
 def serve_frontend():
-    return send_file(os.path.join(BASE_DIR, 'index.html'))
+    return send_file(os.path.join(FRONTEND_DIR, 'index.html'))
 
 @app.route('/style.css')
 def serve_css():
-    return send_file(os.path.join(BASE_DIR, 'style.css'))
+    return send_file(os.path.join(FRONTEND_DIR, 'style.css'))
+
+@app.route('/bridge.js')
+def serve_bridge():
+    return send_file(os.path.join(FRONTEND_DIR, 'bridge.js'))
 
 @app.route('/script.js')
 def serve_js():
-    return send_file(os.path.join(BASE_DIR, 'script.js'))
+    return send_file(os.path.join(FRONTEND_DIR, 'script.js'))
 
 
 if __name__ == '__main__':

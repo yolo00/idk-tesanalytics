@@ -1,0 +1,12 @@
+pandas
+numpy
+selenium
+webdriver-manager
+beautifulsoup4
+deep-translator
+langdetect
+Sastrawi
+Pillow
+emoji
+scikit-learn
+joblib
